@@ -1,0 +1,21 @@
+name: Daily AI News Push
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 北京时间上午 9 点
+    - cron: '0 9 * * *'  # 北京时间下午 5 点
+  workflow_dispatch:      # 允许手动点击运行
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install requests openai
+      - name: Run monitor script
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: python monitor.py
