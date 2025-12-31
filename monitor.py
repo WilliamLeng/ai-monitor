@@ -4,7 +4,7 @@ import json
 import datetime
 from openai import OpenAI
 
-# 钉钉配置
+# 1. 请务必确认这个 Webhook 地址与你钉钉机器人里的一模一样
 DINGTALK_WEBHOOK = "https://oapi.dingtalk.com/robot/send?access_token=6957a32622c091fdcc9150ec5ac55972a228ff82ff8e4a46205789fb108b72bb"
 
 # 使用 DeepSeek API
@@ -14,51 +14,43 @@ client = OpenAI(
  )
 
 def get_ai_analysis(content):
-    """让 AI 进行深度分析和分级"""
     try:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是一个资深 AI 行业分析师。请将英文动态翻译成中文，并将其分为两类：'🔥 核心必读'（对行业有重大影响）或 '📢 行业动态'（一般性更新）。请简要说明理由。"},
+                {"role": "system", "content": "你是一个资深 AI 行业分析师。请将英文动态翻译成中文，并简要说明重要性。"},
                 {"role": "user", "content": content}
             ]
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"分析失败: {str(e)}"
-
-def fetch_10_news():
-    """模拟获取 10 条最新的顶级动态"""
-    return [
-        {"s": "Sam Altman", "c": "AGI is becoming a technical reality faster than we anticipated."},
-        {"s": "Andrej Karpathy", "c": "The future of programming is natural language interaction with LLMs."},
-        {"s": "Nvidia", "c": "New Blackwell chips starting mass shipment to major data centers."},
-        {"s": "OpenAI", "c": "Introducing new safety protocols for autonomous agent coordination."},
-        {"s": "Google DeepMind", "c": "AlphaFold 3 now predicts interactions for all life's molecules."},
-        {"s": "Meta AI", "c": "Llama 4 training is underway with 10x more compute than Llama 3."},
-        {"s": "Anthropic", "c": "Claude 4 achieves breakthrough in long-context reasoning."},
-        {"s": "Elon Musk", "c": "xAI's Colossus cluster is now the world's most powerful AI training system."},
-        {"s": "TechCrunch", "content": "AI startup funding hits all-time high in Q4 2025."},
-        {"s": "The Verge", "content": "Apple integrates deeper AI features into its 2026 OS roadmap."}
-    ]
+        return f"AI 分析失败: {str(e)}"
 
 def main():
-    raw_data = fetch_10_news()
-    eport = f"AI 科技资讯推送测试\n\n"
+    # 2. 这里的标题包含了“AI”关键词，请确保你钉钉机器人的关键词设置里有“AI”
+    report = f"# AI 科技深度简报测试\n> 时间: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n"
     
-    for item in raw_data:
-        content = item.get('c') or item.get('content')
-        source = item.get('s') or item.get('source')
-        analysis = get_ai_analysis(f"Source: {source}\nContent: {content}")
-        report += f"### 📍 {source}\n{analysis}\n\n---\n"
+    # 先拿一条数据做测试
+    test_content = "Sam Altman says AGI is coming soon."
+    analysis = get_ai_analysis(test_content)
+    report += f"### 📍 测试动态\n{analysis}\n\n"
     
-        # 修改最后几行
+    print("正在尝试发送到钉钉...")
+    
+    # 发送请求
     response = requests.post(DINGTALK_WEBHOOK, json={
         "msgtype": "markdown",
-        "markdown": {"title": "AI 深度简报", "text": report}
+        "markdown": {"title": "AI 简报测试", "text": report}
     })
+    
+    # 3. 打印诊断信息
     print(f"发送状态码: {response.status_code}")
-    print(f"服务器返回内容: {response.text}")
-    if response.status_code != 200:
-        raise Exception(f"钉钉发送失败: {response.text}")
+    print(f"钉钉服务器返回: {response.text}")
+    
+    if response.status_code != 200 or "errcode" in response.text and json.loads(response.text)["errcode"] != 0:
+        print("❌ 发送失败，请检查上方返回的错误信息！")
+    else:
+        print("✅ 发送成功！请检查钉钉群。")
 
+if __name__ == "__main__":
+    main()
