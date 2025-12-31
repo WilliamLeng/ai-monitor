@@ -44,7 +44,7 @@ def fetch_10_news():
 
 def main():
     raw_data = fetch_10_news()
-    report = f"# 🤖 AI 科技深度简报\n> {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n"
+    eport = f"AI 科技资讯推送测试\n\n"
     
     for item in raw_data:
         content = item.get('c') or item.get('content')
@@ -52,10 +52,13 @@ def main():
         analysis = get_ai_analysis(f"Source: {source}\nContent: {content}")
         report += f"### 📍 {source}\n{analysis}\n\n---\n"
     
-    requests.post(DINGTALK_WEBHOOK, json={
+        # 修改最后几行
+    response = requests.post(DINGTALK_WEBHOOK, json={
         "msgtype": "markdown",
         "markdown": {"title": "AI 深度简报", "text": report}
     })
+    print(f"发送状态码: {response.status_code}")
+    print(f"服务器返回内容: {response.text}")
+    if response.status_code != 200:
+        raise Exception(f"钉钉发送失败: {response.text}")
 
-if __name__ == "__main__":
-    main()
