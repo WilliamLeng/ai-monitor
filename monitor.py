@@ -3,6 +3,7 @@ import requests
 import json
 import datetime
 import re
+import random
 from openai import OpenAI
 
 # ==========================================
@@ -28,7 +29,9 @@ client = OpenAI(
 def get_ai_analysis(content, mode="news"):
     """AI 深度分析：支持新闻模式和工具推荐模式"""
     if mode == "tool":
-        prompt = "你是一个资深 AI 产品经理。请详细介绍这个 AI 工具的功能、适用人群以及它为什么值得关注。请用中文回答。"
+        categories = ["视频生成", "编程辅助", "办公自动化", "多模态搜索", "AI 绘图", "语言学习", "数据分析"]
+        selected_cat = random.choice(categories)
+        prompt = f"今天是 {datetime.datetime.now().strftime('%Y-%m-%d')}。请作为资深 AI 产品经理，从'{selected_cat}'赛道中挑选一个当前最火或最具创新性的 AI 工具进行深度介绍。要求包含：工具名称、核心功能、适用人群、以及它为什么在今天值得关注。请用中文回答。"
     else:
         prompt = "你是一个资深 AI 行业分析师。请将英文动态翻译成中文，并将其分为：'🔥 核心必读'或 '📢 行业动态'。请重点解读该动态对 AI 行业未来的影响。"
     
@@ -45,10 +48,10 @@ def get_ai_analysis(content, mode="news"):
         return f"分析失败: {str(e)}"
 
 def fetch_data():
-    """抓取大佬动态、行业新闻和工具信息"""
+    """抓取大佬动态和行业新闻"""
     all_news = []
     # 1. 抓取大佬动态
-    for leader in LEADERS[:3]:
+    for leader in LEADERS:
         try:
             resp = requests.get(f"https://rsshub.app/twitter/user/{leader['handle']}", timeout=10 )
             items = re.findall(r'<item>(.*?)</item>', resp.text, re.S)
@@ -70,33 +73,28 @@ def fetch_data():
     except: pass
 
     # 3. 补齐逻辑
-    if len(all_news) < 8:
-        all_news.append({"s": "X: Sam Altman", "c": "Discussing the next phase of AI agents and compute scaling.", "l": "https://x.com/sama"} )
+    if len(all_news) < 10:
+        all_news.append({"s": "X: Sam Altman", "c": "Discussing the next phase of AI agents.", "l": "https://x.com/sama"} )
         all_news.append({"s": "X: Karpathy", "c": "Insights on the shift towards 'Vibe Coding'.", "l": "https://x.com/karpathy"} )
     
     return all_news[:10]
 
 def main():
     now_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-    news_list = fetch_data()
     
-    # --- 第一部分：今日 AI 工具推荐 ---
-    # 模拟获取今日最火工具（实际运行中 AI 会根据最新趋势生成）
-    tool_raw = "Tool: NotebookLM. Feature: AI-generated audio discussions from your documents."
-    tool_analysis = get_ai_analysis(tool_raw, mode="tool")
-    
+    # 1. 获取动态工具推荐
+    tool_analysis = get_ai_analysis("Generate a tool recommendation", mode="tool")
     tool_report = f"AI 科技深度简报 & 工具推荐\n时间: {now_str}\n\n"
     tool_report += f"## ✨ 今日 AI 工具推荐\n{tool_analysis}\n\n---\n"
     
-    # --- 第二部分：大佬动态 & 行业大事 ---
+    # 2. 获取大佬动态和行业新闻
+    news_list = fetch_data()
     news_report = "## 📢 顶级大佬动态 & 行业大事\n\n"
     for item in news_list:
         analysis = get_ai_analysis(f"Source: {item['s']}\nContent: {item['c']}")
         news_report += f"### 📍 {item['s']}\n{analysis}\n\n🔗 [查看原文]({item['l']})\n\n---\n"
     
-    # 发送
-    full_report = tool_report + news_report
-    # 分段发送防止超长
+    # 3. 分段发送
     for url in WEBHOOK_LIST:
         # 发送工具推荐
         requests.post(url, json={"msgtype": "markdown", "markdown": {"title": "AI 工具推荐", "text": tool_report}})
