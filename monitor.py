@@ -11,6 +11,7 @@ from openai import OpenAI
 # ==========================================
 WEBHOOK_LIST = [
     "https://oapi.dingtalk.com/robot/send?access_token=6957a32622c091fdcc9150ec5ac55972a228ff82ff8e4a46205789fb108b72bb",
+    "https://oapi.dingtalk.com/robot/send?access_token=2ad142608b6a4e2f699ea544b7012e7a33b0e252466959a2c688718a8a2e43ac"
 ]
 
 LEADERS = [
